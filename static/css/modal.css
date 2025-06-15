@@ -1,0 +1,69 @@
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    position: relative;
+    background-color: var(--background-color);
+    margin: 10% auto;
+    padding: 30px 30px 50px;
+    border-radius: 12px;
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: modalopen 0.3s;
+    box-shadow: 0 5px 30px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes modalopen {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close:hover {
+    color: var(--text-color);
+}
+
+#view-description-text {
+    max-height: 60vh;
+    overflow-y: auto;
+    margin-top: 20px;
+    padding: 10px;
+    font-size: 1rem;
+    line-height: 1.7;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+#view-title {
+    font-family: 'Tahoma', sans-serif;
+}
+
+.modal.modal-entering {
+    opacity: 0;
+    transform: scale(0.7);
+}
+
+.modal.modal-visible {
+    opacity: 1;
+    transform: scale(1);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

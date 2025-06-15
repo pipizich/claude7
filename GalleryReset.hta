@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Museum Gallery Reset</title>
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <hta:application 
+        id="GalleryReset"
+        applicationname="Museum Gallery Reset Tool"
+        icon="shell32.dll,43"
+        singleinstance="yes"
+        windowstate="normal"
+        border="thin"
+        borderstyle="raised"
+        innerborder="no"
+        maximizebutton="no"
+        navigable="no"
+        scroll="no"
+    >
+    <script language="VBScript">
+        Sub Window_OnLoad
+            window.resizeTo 500, 500
+            window.moveTo (screen.availWidth - 500) / 2, (screen.availHeight - 500) / 2
+        End Sub
+    </script>
+    <style>
+        body {
+            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 460px;
+            height: 400px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            font-size: 22px;
+        }
+        .warning-icon {
+            font-size: 40px;
+            text-align: center;
+            color: #f44336;
+            margin: 5px 0;
+        }
+        .warning-text {
+            color: #f44336;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .description {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: auto;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        #resetBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #resetBtn:hover {
+            background-color: #d32f2f;
+        }
+        #cancelBtn {
+            background-color: #e0e0e0;
+        }
+        #cancelBtn:hover {
+            background-color: #bdbdbd;
+        }
+        .confirm-check {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        #status {
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+            color: #757575;
+            height: 20px;
+            font-size: 13px;
+        }
+        .log-container {
+            margin-top: 15px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            height: 100px;
+            overflow-y: auto;
+            font-size: 12px;
+            font-family: Consolas, monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Museum Gallery Reset</h1>
+        <div class="warning-icon">&#9888</div>
+        <div class="warning-text">Warning: This will reset your gallery</div>
+        <div class="description">
+            All images and database records will be permanently deleted.
+            This action cannot be undone!
+        </div>
+        <div class="confirm-check">
+            <input type="checkbox" id="confirmCheck">
+            <label for="confirmCheck">I understand this will delete everything</label>
+        </div>
+        <div id="status"></div>
+        <div class="log-container" id="logArea"></div>
+        <div class="buttons">
+            <button id="cancelBtn" onclick="window.close()">Cancel</button>
+            <button id="resetBtn" onclick="resetGallery()">Reset Gallery</button>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            var logArea = document.getElementById('logArea');
+            var line = document.createElement('div');
+            line.textContent = '> ' + message;
+            logArea.appendChild(line);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+        
+        function setStatus(message) {
+            document.getElementById('status').innerText = message;
+            log(message);
+        }
+        
+        function resetGallery() {
+            if (!document.getElementById('confirmCheck').checked) {
+                alert('You must confirm by checking the box');
+                return;
+            }
+            
+            if (!confirm('Are you absolutely sure you want to reset the gallery?')) {
+                return;
+            }
+            
+            var shell = new ActiveXObject("WScript.Shell");
+            
+            try {
+                setStatus("Stopping server if running...");
+                shell.Run('taskkill /F /IM python.exe /FI "WINDOWTITLE eq Flask Server"', 0, true);
+                
+                // Use cmd commands to avoid path issues
+                setStatus("Deleting images...");
+                shell.Run('cmd /c if exist "static\\uploads\\*" del /Q "static\\uploads\\*.*"', 0, true);
+                
+                setStatus("Creating uploads folder if needed...");
+                shell.Run('cmd /c if not exist "static\\uploads" mkdir "static\\uploads"', 0, true);
+                
+                setStatus("Resetting database...");
+                shell.Run('cmd /c if exist "database.db" del /Q "database.db"', 0, true);
+                
+                // Initialize fresh database
+                setStatus("Creating new database...");
+                shell.Run('cmd /c python -c "from app import init_db; init_db()"', 0, true);
+                
+                setStatus("Reset complete!");
+                log("All operations completed successfully");
+                
+                setTimeout(function() {
+                    alert("Gallery has been reset successfully!");
+                    window.close();
+                }, 1000);
+                
+            } catch (e) {
+                setStatus("Error: " + e.message);
+                log("ERROR: " + e.message);
+                alert("An error occurred: " + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

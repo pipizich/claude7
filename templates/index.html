@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museum Art Gallery</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}"> 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+</head>
+<body>
+    <header>
+      <h1>Museum Art Gallery</h1>
+      <p class="image-count"><!-- tổng số ảnh --><span id="image-total">0</span></p>
+    </header>
+
+    <!-- Sortable Gallery Container -->
+    <main>
+      <div id="gallery" class="gallery">
+        {% for artwork in artworks %}
+        <div class="artwork" data-id="{{ artwork.id }}">
+            <div class="artwork-container">
+                <img data-src="{{ artwork.image_path }}" alt="{{ artwork.title }}" class="lazy">
+                <div class="artwork-actions">
+                    <button class="btn-edit" data-id="{{ artwork.id }}" data-title="{{ artwork.title }}" data-description="{{ artwork.description }}"><i class="fas fa-pen"></i></button>
+                    <button class="btn-delete" data-id="{{ artwork.id }}" data-title="{{ artwork.title }}"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="artwork-info">
+                {% if artwork.title %}
+                <h3 class="artwork-title" data-id="{{ artwork.id }}">{{ artwork.title }}</h3>
+                {% endif %}
+                <div class="artwork-description">
+                    <p class="truncated-description">{{ artwork.description }}</p>
+                    {% if artwork.description|length > 120 %}
+                    <button class="btn-see-more" data-id="{{ artwork.id }}">See more</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+      </div>
+    </main>
+    
+    <!-- Floating Add Button -->
+    <button id="add-artwork-btn" class="fab">
+      <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Modals -->
+    <!-- Add Artwork Modal -->
+    <div id="add-artwork-modal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Add New Artwork</h2>
+        <form id="add-form" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="title">Title (optional):</label>
+            <input type="text" id="title" name="title">
+          </div>
+          <div class="form-group">
+            <label for="description">Description (optional):</label>
+            <textarea id="description" name="description" rows="4" placeholder="Enter artwork description (optional)"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Image:</label>
+            <div id="drop-zone" class="drop-zone">
+              <p>Drag &amp; drop, click or Ctrl+V</p>
+              <input type="file" id="file-input" name="image" accept="image/*" required hidden>
+            </div>
+            <div id="preview-container"></div>
+          </div>
+          <button type="submit" class="btn-submit">Add Artwork</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Edit Artwork Modal -->
+    <div id="edit-artwork-modal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Edit Artwork</h2>
+        <form id="edit-form" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="edit-title">Title (optional):</label>
+            <input type="text" id="edit-title" name="title">
+          </div>
+          <div class="form-group">
+            <label for="edit-description">Description (optional):</label>
+            <textarea id="edit-description" name="description" rows="4" placeholder="Enter artwork description (optional)"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Image (leave empty to keep current):</label>
+            <div id="edit-drop-zone" class="drop-zone">
+              <p>Drag &amp; drop, click or Ctrl+V</p>
+              <input type="file" id="edit-file-input" name="image" accept="image/*" hidden>
+            </div>
+            <div id="edit-preview-container"></div>
+          </div>
+          <button type="submit" class="btn-submit">Update Artwork</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- View Description Modal -->
+    <div id="view-description-modal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="view-title"></h2>
+        <div id="view-description-text"></div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal">
+      <div class="modal-content">
+        <h2>Confirm Deletion</h2>
+        <p>Are you sure you want to delete this artwork?</p>
+        <div class="button-group">
+          <button id="confirm-delete" class="btn-danger">Delete</button>
+          <button id="cancel-delete" class="btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SortableJS offline -->
+    <script src="{{ url_for('static', filename='js/sortable.min.js') }}"></script>
+
+    <!-- Core JS của bạn -->
+    <script type="module" src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Update image counter with animation
+    const totalImages = document.querySelectorAll('.gallery .artwork').length;
+    const counter = document.getElementById('image-total');
+    
+    // Animated counter
+    let currentCount = 0;
+    const targetCount = totalImages;
+    const duration = 1000;
+    const increment = targetCount / (duration / 16);
+    
+    const animateCounter = () => {
+      currentCount += increment;
+      if (currentCount < targetCount) {
+        counter.textContent = Math.floor(currentCount);
+        requestAnimationFrame(animateCounter);
+      } else {
+        counter.textContent = targetCount;
+      }
+    };
+    
+    setTimeout(animateCounter, 500);
+
+    // Initialize Sortable with enhanced feedback
+    const gallery = document.getElementById('gallery');
+    if (gallery) {
+      Sortable.create(gallery, {
+        animation: 200,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        onStart: () => {
+          if (window.toast) {
+            window.toast.info('Reordering artworks...');
+          }
+        },
+        onEnd: async () => {
+          // Tính toán position ngược lại để ảnh mới nhất vẫn ở đầu
+          const artworks = Array.from(gallery.children);
+          const totalCount = artworks.length;
+          
+          const order = artworks.map((el, idx) => ({
+            id: el.dataset.id,
+            position: totalCount - idx // Đảo ngược position
+          }));
+          
+          try {
+            const response = await fetch('/update-order', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({order})
+            });
+            
+            const result = await response.json();
+            if (result.success && window.toast) {
+              window.toast.success('Artwork order updated successfully!');
+            }
+          } catch (error) {
+            console.error('Update order error:', error);
+            if (window.toast) {
+              window.toast.error('Failed to update order');
+            }
+          }
+        }
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
